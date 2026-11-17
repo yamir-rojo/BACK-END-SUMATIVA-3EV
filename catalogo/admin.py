@@ -14,14 +14,18 @@ class ProductoAdmin(admin.ModelAdmin):
     list_display = (
         'nombre',
         'linea',
-        'precio',
+        'precio_en_pesos',
         'porciones',
         'apto_celiacos',
         'stock',
         'disponible',
     )
     list_filter = ('linea', 'apto_celiacos', 'disponible')
-    search_fields = ('nombre', 'linea__nombre')
+    search_fields = ('nombre',)
+
+    @admin.display(description='Precio', ordering='precio')
+    def precio_en_pesos(self, producto):
+        return f'${producto.precio:,}'.replace(',', '.')
 
 
 @admin.register(Encargo)
@@ -35,6 +39,6 @@ class EncargoAdmin(admin.ModelAdmin):
         'cantidad',
         'fecha_hora',
     )
-    list_filter = ('fecha_retiro',)
-    search_fields = ('codigo', 'nombre_cliente', 'correo_cliente')
+    list_filter = ('producto', 'fecha_retiro')
+    search_fields = ('nombre_cliente', 'correo_cliente')
     readonly_fields = ('codigo', 'fecha_hora')
