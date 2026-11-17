@@ -1,7 +1,9 @@
 from django.contrib import admin
+from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.db import IntegrityError, transaction
 from django.test import TestCase
+from django.urls import reverse
 
 from .admin import EncargoAdmin, ProductoAdmin
 from .models import Encargo, Linea, Producto
@@ -69,17 +71,57 @@ class CatalogoAdminTests(TestCase):
         admin_producto = ProductoAdmin(Producto, admin.site)
 
         self.assertEqual(admin_producto.precio_en_pesos(producto), '$18.990')
-        self.assertIn('linea', admin_producto.list_filter)
+        self.assertEqual(admin_producto.list_filter[0][0], 'linea')
         self.assertIn('apto_celiacos', admin_producto.list_filter)
         self.assertIn('nombre', admin_producto.search_fields)
 
     def test_encargos_se_filtran_por_producto_y_fecha_de_retiro(self):
         admin_encargo = EncargoAdmin(Encargo, admin.site)
 
-        self.assertIn('producto', admin_encargo.list_filter)
+        self.assertEqual(admin_encargo.list_filter[0][0], 'producto')
         self.assertIn('fecha_retiro', admin_encargo.list_filter)
         self.assertIn('nombre_cliente', admin_encargo.search_fields)
         self.assertIn('correo_cliente', admin_encargo.search_fields)
+
+    def test_filtro_por_producto_se_muestra_con_un_solo_producto(self):
+        linea = Linea.objects.create(nombre='Tortas')
+        Producto.objects.create(
+            nombre='Torta de chocolate',
+            linea=linea,
+            fotografia='productos/torta.jpg',
+            precio=18000,
+            porciones=10,
+        )
+        superusuario = get_user_model().objects.create_superuser(
+            username='admin',
+            email='admin@example.com',
+            password='test-password',
+        )
+        self.client.force_login(superusuario)
+        response = self.client.get(reverse('admin:catalogo_encargo_changelist'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Por producto')
+
+    def test_filtro_por_linea_se_muestra_con_una_sola_linea(self):
+        linea = Linea.objects.create(nombre='Tortas')
+        Producto.objects.create(
+            nombre='Torta de chocolate',
+            linea=linea,
+            fotografia='productos/torta.jpg',
+            precio=18000,
+            porciones=10,
+        )
+        superusuario = get_user_model().objects.create_superuser(
+            username='admin',
+            email='admin@example.com',
+            password='test-password',
+        )
+        self.client.force_login(superusuario)
+        response = self.client.get(reverse('admin:catalogo_producto_changelist'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Por linea')
 
     def test_grupo_cocina_tiene_permisos_solicitados(self):
         grupo = Group.objects.get(name='Cocina')

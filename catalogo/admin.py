@@ -3,6 +3,11 @@ from django.contrib import admin
 from .models import Encargo, Linea, Producto
 
 
+class RelatedFieldListFilterWithOptions(admin.RelatedFieldListFilter):
+    def has_output(self):
+        return bool(self.lookup_choices)
+
+
 @admin.register(Linea)
 class LineaAdmin(admin.ModelAdmin):
     list_display = ('nombre',)
@@ -20,7 +25,11 @@ class ProductoAdmin(admin.ModelAdmin):
         'stock',
         'disponible',
     )
-    list_filter = ('linea', 'apto_celiacos', 'disponible')
+    list_filter = (
+        ('linea', RelatedFieldListFilterWithOptions),
+        'apto_celiacos',
+        'disponible',
+    )
     search_fields = ('nombre',)
 
     @admin.display(description='Precio', ordering='precio')
@@ -39,6 +48,9 @@ class EncargoAdmin(admin.ModelAdmin):
         'cantidad',
         'fecha_hora',
     )
-    list_filter = ('producto', 'fecha_retiro')
+    list_filter = (
+        ('producto', RelatedFieldListFilterWithOptions),
+        'fecha_retiro',
+    )
     search_fields = ('nombre_cliente', 'correo_cliente')
     readonly_fields = ('codigo', 'fecha_hora')
