@@ -23,7 +23,7 @@ class Producto(models.Model):
         on_delete=models.CASCADE,
         related_name='productos',
     )
-    fotografia = models.FileField(upload_to='productos/')
+    fotografia = models.ImageField(upload_to='productos/')
     precio = models.PositiveIntegerField(validators=[MinValueValidator(0)])
     porciones = models.PositiveIntegerField(
         validators=[MinValueValidator(1)],
