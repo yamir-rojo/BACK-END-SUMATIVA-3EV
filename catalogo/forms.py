@@ -12,6 +12,10 @@ class EncargoForm(forms.ModelForm):
         widget=forms.NumberInput(attrs={'min': 1, 'max': 3}),
     )
 
+    def __init__(self, *args, producto, **kwargs):
+        self.producto = producto
+        super().__init__(*args, **kwargs)
+
     class Meta:
         model = Encargo
         fields = ('nombre_cliente', 'correo_cliente', 'fecha_retiro', 'cantidad')
@@ -31,3 +35,11 @@ class EncargoForm(forms.ModelForm):
                 'La fecha de retiro no puede ser anterior a hoy.',
             )
         return fecha_retiro
+
+    def clean_cantidad(self):
+        cantidad = self.cleaned_data['cantidad']
+        if cantidad > self.producto.stock:
+            raise forms.ValidationError(
+                f'Solo hay {self.producto.stock} unidades disponibles.',
+            )
+        return cantidad

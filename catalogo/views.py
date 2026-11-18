@@ -40,7 +40,7 @@ def detalle_producto(request, pk):
         disponible=True,
     )
     if request.method == 'POST':
-        formulario = EncargoForm(request.POST)
+        formulario = EncargoForm(request.POST, producto=producto)
         if formulario.is_valid():
             encargo = formulario.save(commit=False)
             encargo.producto = producto
@@ -51,7 +51,7 @@ def detalle_producto(request, pk):
             )
             return redirect('catalogo:detalle_producto', pk=producto.pk)
     else:
-        formulario = EncargoForm()
+        formulario = EncargoForm(producto=producto)
 
     return render(
         request,

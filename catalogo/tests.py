@@ -287,3 +287,23 @@ class CatalogoPublicoTests(TestCase):
                 self.assertEqual(response.status_code, 200)
                 self.assertTrue(response.context['formulario'].has_error(campo))
                 self.assertFalse(Encargo.objects.exists())
+
+    def test_encargo_rechaza_cantidad_superior_al_stock_e_indica_disponibilidad(self):
+        Producto.objects.filter(pk=self.producto.pk).update(stock=2)
+        response = self.client.post(
+            reverse('catalogo:detalle_producto', args=[self.producto.pk]),
+            {
+                'nombre_cliente': 'Ana Pérez',
+                'correo_cliente': 'ana@example.com',
+                'fecha_retiro': timezone.localdate().isoformat(),
+                'cantidad': 3,
+            },
+        )
+
+        formulario = response.context['formulario']
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            formulario.errors['cantidad'],
+            ['Solo hay 2 unidades disponibles.'],
+        )
+        self.assertFalse(Encargo.objects.exists())
