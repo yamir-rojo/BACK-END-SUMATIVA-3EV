@@ -9,6 +9,9 @@
         <img src="{{ producto.fotografia.url }}" alt="Fotografía de {{ producto.nombre }}">
         <div class="detail-info">
             <h1>{{ producto.nombre }}</h1>
+            {% if producto.stock == 0 %}
+                <p class="sold-out" role="status">Agotado por hoy</p>
+            {% endif %}
             <p class="price">{{ producto.precio|pesos_chilenos }}</p>
             <dl>
                 <dt>Línea</dt>
@@ -24,13 +27,15 @@
             </dl>
         </div>
     </article>
-    <section class="order-form" aria-labelledby="order-heading">
-        <h2 id="order-heading">Haz tu encargo</h2>
-        <p>No necesitas iniciar sesión.</p>
-        <form method="post">
-            {% csrf_token %}
-            {{ formulario.as_p }}
-            <button type="submit">Confirmar encargo</button>
-        </form>
-    </section>
+    {% if producto.stock > 0 %}
+        <section class="order-form" aria-labelledby="order-heading">
+            <h2 id="order-heading">Haz tu encargo</h2>
+            <p>No necesitas iniciar sesión.</p>
+            <form method="post">
+                {% csrf_token %}
+                {{ formulario.as_p }}
+                <button type="submit">Confirmar encargo</button>
+            </form>
+        </section>
+    {% endif %}
 {% endblock %}

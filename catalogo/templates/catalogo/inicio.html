@@ -34,6 +34,9 @@
                             <h2>{{ producto.nombre }}</h2>
                             <p>{{ producto.linea.nombre }}</p>
                             <p class="price">{{ producto.precio|pesos_chilenos }}</p>
+                            {% if producto.stock == 0 %}
+                                <p class="sold-out" role="status">Agotado por hoy</p>
+                            {% endif %}
                         </div>
                     </a>
                 </article>

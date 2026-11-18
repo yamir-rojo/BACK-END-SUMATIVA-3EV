@@ -167,6 +167,15 @@ class CatalogoPublicoTests(TestCase):
             stock=0,
             disponible=False,
         )
+        self.producto_agotado = Producto.objects.create(
+            nombre='Torta sin stock',
+            linea=self.linea,
+            fotografia='productos/sin-stock.jpg',
+            precio=16000,
+            porciones=8,
+            stock=0,
+            disponible=True,
+        )
 
     def test_inicio_muestra_productos_disponibles_y_precio_en_pesos(self):
         response = self.client.get(reverse('catalogo:inicio'))
@@ -176,6 +185,8 @@ class CatalogoPublicoTests(TestCase):
         self.assertContains(response, 'Tortas')
         self.assertContains(response, '$18.990')
         self.assertContains(response, '/media/productos/chocolate.jpg')
+        self.assertContains(response, 'Torta sin stock')
+        self.assertContains(response, 'Agotado por hoy')
         self.assertNotContains(response, 'Torta agotada')
 
     def test_busqueda_y_linea_se_pueden_aplicar_juntas(self):
@@ -222,6 +233,28 @@ class CatalogoPublicoTests(TestCase):
         self.assertContains(response, 'Stock del día')
         self.assertContains(response, '<dd>4</dd>', html=True)
         self.assertContains(response, 'Disponible para la venta')
+
+    def test_producto_sin_stock_se_muestra_agotado_y_no_acepta_encargos(self):
+        url = reverse('catalogo:detalle_producto', args=[self.producto_agotado.pk])
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Agotado por hoy')
+        self.assertNotContains(response, 'Confirmar encargo')
+
+        response = self.client.post(
+            url,
+            {
+                'nombre_cliente': 'Ana Pérez',
+                'correo_cliente': 'ana@example.com',
+                'fecha_retiro': timezone.localdate().isoformat(),
+                'cantidad': 1,
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Agotado por hoy')
+        self.assertFalse(Encargo.objects.exists())
 
     def test_detalle_responde_404_para_producto_inexistente_o_no_disponible(self):
         with override_settings(DEBUG=False):
