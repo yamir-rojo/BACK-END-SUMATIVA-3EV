@@ -1,9 +1,12 @@
+from datetime import timedelta
+
 from django.contrib import admin
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.db import IntegrityError, transaction
 from django.test import TestCase, override_settings
 from django.urls import reverse
+from django.utils import timezone
 
 from .admin import EncargoAdmin, ProductoAdmin
 from .models import Encargo, Linea, Producto
@@ -236,7 +239,7 @@ class CatalogoPublicoTests(TestCase):
             {
                 'nombre_cliente': 'Ana Pérez',
                 'correo_cliente': 'ana@example.com',
-                'fecha_retiro': '2026-12-01',
+                'fecha_retiro': timezone.localdate().isoformat(),
                 'cantidad': 2,
             },
             follow=True,
@@ -248,21 +251,39 @@ class CatalogoPublicoTests(TestCase):
         self.assertEqual(encargo.producto, self.producto)
         self.assertEqual(encargo.nombre_cliente, 'Ana Pérez')
         self.assertEqual(encargo.correo_cliente, 'ana@example.com')
-        self.assertEqual(str(encargo.fecha_retiro), '2026-12-01')
+        self.assertEqual(encargo.fecha_retiro, timezone.localdate())
         self.assertEqual(encargo.cantidad, 2)
         self.assertContains(response, str(encargo.codigo))
         self.assertContains(response, 'Tu encargo se registró correctamente')
 
-    def test_encargo_rechaza_cantidad_menor_a_uno(self):
-        response = self.client.post(
-            reverse('catalogo:detalle_producto', args=[self.producto.pk]),
-            {
-                'nombre_cliente': 'Ana Pérez',
-                'correo_cliente': 'ana@example.com',
-                'fecha_retiro': '2026-12-01',
-                'cantidad': 0,
-            },
+    def test_encargo_rechaza_datos_fuera_de_limites_o_invalidos(self):
+        casos_invalidos = (
+            ({'cantidad': 0}, 'cantidad'),
+            ({'cantidad': 4}, 'cantidad'),
+            ({'correo_cliente': 'correo-invalido'}, 'correo_cliente'),
+            (
+                {
+                    'fecha_retiro': (
+                        timezone.localdate() - timedelta(days=1)
+                    ).isoformat(),
+                },
+                'fecha_retiro',
+            ),
         )
+        url = reverse('catalogo:detalle_producto', args=[self.producto.pk])
 
-        self.assertEqual(response.status_code, 200)
-        self.assertFalse(Encargo.objects.exists())
+        for datos_invalidos, campo in casos_invalidos:
+            with self.subTest(campo=campo, datos=datos_invalidos):
+                datos = {
+                    'nombre_cliente': 'Ana Pérez',
+                    'correo_cliente': 'ana@example.com',
+                    'fecha_retiro': timezone.localdate().isoformat(),
+                    'cantidad': 2,
+                }
+                datos.update(datos_invalidos)
+
+                response = self.client.post(url, datos)
+
+                self.assertEqual(response.status_code, 200)
+                self.assertTrue(response.context['formulario'].has_error(campo))
+                self.assertFalse(Encargo.objects.exists())
