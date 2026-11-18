@@ -253,6 +253,8 @@ class CatalogoPublicoTests(TestCase):
         self.assertEqual(encargo.correo_cliente, 'ana@example.com')
         self.assertEqual(encargo.fecha_retiro, timezone.localdate())
         self.assertEqual(encargo.cantidad, 2)
+        self.producto.refresh_from_db()
+        self.assertEqual(self.producto.stock, 2)
         self.assertContains(response, str(encargo.codigo))
         self.assertContains(response, 'Tu encargo se registró correctamente')
 
@@ -307,3 +309,5 @@ class CatalogoPublicoTests(TestCase):
             ['Solo hay 2 unidades disponibles.'],
         )
         self.assertFalse(Encargo.objects.exists())
+        self.producto.refresh_from_db()
+        self.assertEqual(self.producto.stock, 2)

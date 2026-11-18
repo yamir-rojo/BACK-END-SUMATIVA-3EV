@@ -1,4 +1,6 @@
 from django.contrib import messages
+from django.db import transaction
+from django.db.models import F
 from django.shortcuts import get_object_or_404, redirect, render
 
 from .forms import EncargoForm
@@ -42,14 +44,34 @@ def detalle_producto(request, pk):
     if request.method == 'POST':
         formulario = EncargoForm(request.POST, producto=producto)
         if formulario.is_valid():
-            encargo = formulario.save(commit=False)
-            encargo.producto = producto
-            encargo.save()
-            messages.success(
-                request,
-                f'Tu encargo se registró correctamente. Código: {encargo.codigo}',
+            cantidad = formulario.cleaned_data['cantidad']
+            with transaction.atomic():
+                stock_descontado = Producto.objects.filter(
+                    pk=producto.pk,
+                    disponible=True,
+                    stock__gte=cantidad,
+                ).update(stock=F('stock') - cantidad)
+                if stock_descontado:
+                    encargo = formulario.save(commit=False)
+                    encargo.producto = producto
+                    encargo.save()
+
+            if stock_descontado:
+                messages.success(
+                    request,
+                    f'Tu encargo se registró correctamente. Código: {encargo.codigo}',
+                )
+                return redirect('catalogo:detalle_producto', pk=producto.pk)
+
+            producto = get_object_or_404(
+                Producto.objects.select_related('linea'),
+                pk=producto.pk,
+                disponible=True,
             )
-            return redirect('catalogo:detalle_producto', pk=producto.pk)
+            formulario.add_error(
+                'cantidad',
+                f'Solo hay {producto.stock} unidades disponibles.',
+            )
     else:
         formulario = EncargoForm(producto=producto)
 
