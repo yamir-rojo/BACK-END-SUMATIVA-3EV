@@ -1,0 +1,9 @@
+{% extends "catalogo/base.html" %}
+
+{% block title %}Página no encontrada | Pastelería{% endblock %}
+
+{% block content %}
+    <h1>Producto no encontrado</h1>
+    <p>El producto no existe o no está disponible para la venta.</p>
+    <p><a class="back-link" href="{% url 'catalogo:inicio' %}">Volver al catálogo</a></p>
+{% endblock %}

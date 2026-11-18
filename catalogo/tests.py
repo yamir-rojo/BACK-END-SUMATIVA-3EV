@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.db import IntegrityError, transaction
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from .admin import EncargoAdmin, ProductoAdmin
@@ -139,3 +139,93 @@ class CatalogoAdminTests(TestCase):
                 'view_encargo',
             },
         )
+
+
+class CatalogoPublicoTests(TestCase):
+    def setUp(self):
+        self.linea = Linea.objects.create(nombre='Tortas')
+        self.otra_linea = Linea.objects.create(nombre='Galletas')
+        self.producto = Producto.objects.create(
+            nombre='Torta de chocolate',
+            linea=self.linea,
+            fotografia='productos/chocolate.jpg',
+            precio=18990,
+            porciones=10,
+            apto_celiacos=True,
+            stock=4,
+            disponible=True,
+        )
+        self.producto_no_disponible = Producto.objects.create(
+            nombre='Torta agotada',
+            linea=self.linea,
+            fotografia='productos/agotada.jpg',
+            precio=12000,
+            porciones=8,
+            stock=0,
+            disponible=False,
+        )
+
+    def test_inicio_muestra_productos_disponibles_y_precio_en_pesos(self):
+        response = self.client.get(reverse('catalogo:inicio'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Torta de chocolate')
+        self.assertContains(response, 'Tortas')
+        self.assertContains(response, '$18.990')
+        self.assertContains(response, '/media/productos/chocolate.jpg')
+        self.assertNotContains(response, 'Torta agotada')
+
+    def test_busqueda_y_linea_se_pueden_aplicar_juntas(self):
+        producto_misma_linea = Producto.objects.create(
+            nombre='Torta de frutilla',
+            linea=self.linea,
+            fotografia='productos/frutilla.jpg',
+            precio=15000,
+            porciones=8,
+        )
+        Producto.objects.create(
+            nombre='Galletas de frutilla',
+            linea=self.otra_linea,
+            fotografia='productos/galletas.jpg',
+            precio=5000,
+            porciones=2,
+        )
+
+        response = self.client.get(
+            reverse('catalogo:inicio'),
+            {'q': 'FRUTILLA', 'linea': self.linea.pk},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            list(response.context['productos']),
+            [producto_misma_linea],
+        )
+
+    def test_detalle_muestra_todos_los_datos_y_usa_plantilla_base(self):
+        response = self.client.get(
+            reverse('catalogo:detalle_producto', args=[self.producto.pk]),
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Administración')
+        self.assertContains(response, '/media/productos/chocolate.jpg')
+        self.assertContains(response, 'Torta de chocolate')
+        self.assertContains(response, 'Tortas')
+        self.assertContains(response, '$18.990')
+        self.assertContains(response, '<dd>10</dd>', html=True)
+        self.assertContains(response, 'Apto para celíacos')
+        self.assertContains(response, '<dd>Sí</dd>', html=True)
+        self.assertContains(response, 'Stock del día')
+        self.assertContains(response, '<dd>4</dd>', html=True)
+        self.assertContains(response, 'Disponible para la venta')
+
+    def test_detalle_responde_404_para_producto_inexistente_o_no_disponible(self):
+        with override_settings(DEBUG=False):
+            for pk in (self.producto_no_disponible.pk, self.producto.pk + 100):
+                with self.subTest(pk=pk):
+                    response = self.client.get(
+                        reverse('catalogo:detalle_producto', args=[pk]),
+                    )
+                    self.assertEqual(response.status_code, 404)
+                    self.assertContains(response, 'Administración', status_code=404)

@@ -1,0 +1,45 @@
+{% extends "catalogo/base.html" %}
+{% load catalogo_tags %}
+
+{% block title %}Catálogo | Pastelería{% endblock %}
+
+{% block content %}
+    <h1>Catálogo de productos</h1>
+    <form class="filters" method="get" action="{% url 'catalogo:inicio' %}">
+        <label>
+            Buscar por nombre
+            <input type="search" name="q" value="{{ busqueda }}" placeholder="Ej. torta de chocolate">
+        </label>
+        <label>
+            Línea
+            <select name="linea">
+                <option value="">Todas las líneas</option>
+                {% for linea in lineas %}
+                    <option value="{{ linea.pk }}" {% if linea_seleccionada == linea.pk %}selected{% endif %}>
+                        {{ linea.nombre }}
+                    </option>
+                {% endfor %}
+            </select>
+        </label>
+        <button type="submit">Filtrar</button>
+    </form>
+
+    {% if productos %}
+        <section class="products" aria-label="Productos disponibles">
+            {% for producto in productos %}
+                <article class="product">
+                    <a href="{% url 'catalogo:detalle_producto' producto.pk %}">
+                        <img src="{{ producto.fotografia.url }}" alt="Fotografía de {{ producto.nombre }}">
+                        <div class="product-info">
+                            <h2>{{ producto.nombre }}</h2>
+                            <p>{{ producto.linea.nombre }}</p>
+                            <p class="price">{{ producto.precio|pesos_chilenos }}</p>
+                        </div>
+                    </a>
+                </article>
+            {% endfor %}
+        </section>
+    {% else %}
+        <p>No encontramos productos disponibles con esos criterios.</p>
+    {% endif %}
+{% endblock %}

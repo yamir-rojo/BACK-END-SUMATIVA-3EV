@@ -1,0 +1,27 @@
+{% extends "catalogo/base.html" %}
+{% load catalogo_tags %}
+
+{% block title %}{{ producto.nombre }} | Pastelería{% endblock %}
+
+{% block content %}
+    <p><a class="back-link" href="{% url 'catalogo:inicio' %}">Volver al catálogo</a></p>
+    <article class="detail">
+        <img src="{{ producto.fotografia.url }}" alt="Fotografía de {{ producto.nombre }}">
+        <div class="detail-info">
+            <h1>{{ producto.nombre }}</h1>
+            <p class="price">{{ producto.precio|pesos_chilenos }}</p>
+            <dl>
+                <dt>Línea</dt>
+                <dd>{{ producto.linea.nombre }}</dd>
+                <dt>Porciones</dt>
+                <dd>{{ producto.porciones }}</dd>
+                <dt>Apto para celíacos</dt>
+                <dd>{% if producto.apto_celiacos %}Sí{% else %}No{% endif %}</dd>
+                <dt>Stock del día</dt>
+                <dd>{{ producto.stock }}</dd>
+                <dt>Disponible para la venta</dt>
+                <dd>{% if producto.disponible %}Sí{% else %}No{% endif %}</dd>
+            </dl>
+        </div>
+    </article>
+{% endblock %}
