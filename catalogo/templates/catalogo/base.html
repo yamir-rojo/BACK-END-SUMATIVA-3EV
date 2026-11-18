@@ -53,6 +53,11 @@
         .detail-info dt { font-weight: 700; }
         .detail-info dd { margin: 0; }
         .back-link { color: #6b382e; }
+        .messages { padding: 0; list-style: none; }
+        .messages li { padding: .8rem 1rem; background: #e6f4e8; border-radius: .4rem; }
+        .order-form { max-width: 600px; margin: 2rem 0; }
+        .order-form p { display: grid; gap: .35rem; }
+        .errorlist { color: #a32121; }
     </style>
 </head>
 <body>
@@ -66,6 +71,13 @@
         </nav>
     </header>
     <main>
+        {% if messages %}
+            <ul class="messages">
+                {% for message in messages %}
+                    <li class="{{ message.tags }}">{{ message }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
         {% block content %}{% endblock %}
     </main>
 </body>

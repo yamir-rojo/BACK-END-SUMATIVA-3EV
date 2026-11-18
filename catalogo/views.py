@@ -1,5 +1,7 @@
-from django.shortcuts import get_object_or_404, render
+from django.contrib import messages
+from django.shortcuts import get_object_or_404, redirect, render
 
+from .forms import EncargoForm
 from .models import Linea, Producto
 
 
@@ -37,4 +39,22 @@ def detalle_producto(request, pk):
         pk=pk,
         disponible=True,
     )
-    return render(request, 'catalogo/detalle_producto.html', {'producto': producto})
+    if request.method == 'POST':
+        formulario = EncargoForm(request.POST)
+        if formulario.is_valid():
+            encargo = formulario.save(commit=False)
+            encargo.producto = producto
+            encargo.save()
+            messages.success(
+                request,
+                f'Tu encargo se registró correctamente. Código: {encargo.codigo}',
+            )
+            return redirect('catalogo:detalle_producto', pk=producto.pk)
+    else:
+        formulario = EncargoForm()
+
+    return render(
+        request,
+        'catalogo/detalle_producto.html',
+        {'producto': producto, 'formulario': formulario},
+    )

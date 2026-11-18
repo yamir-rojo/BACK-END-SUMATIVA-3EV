@@ -24,4 +24,13 @@
             </dl>
         </div>
     </article>
+    <section class="order-form" aria-labelledby="order-heading">
+        <h2 id="order-heading">Haz tu encargo</h2>
+        <p>No necesitas iniciar sesión.</p>
+        <form method="post">
+            {% csrf_token %}
+            {{ formulario.as_p }}
+            <button type="submit">Confirmar encargo</button>
+        </form>
+    </section>
 {% endblock %}

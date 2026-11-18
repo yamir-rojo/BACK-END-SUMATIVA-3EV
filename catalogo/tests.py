@@ -229,3 +229,40 @@ class CatalogoPublicoTests(TestCase):
                     )
                     self.assertEqual(response.status_code, 404)
                     self.assertContains(response, 'Administración', status_code=404)
+
+    def test_visitante_puede_encargar_producto_sin_iniciar_sesion(self):
+        response = self.client.post(
+            reverse('catalogo:detalle_producto', args=[self.producto.pk]),
+            {
+                'nombre_cliente': 'Ana Pérez',
+                'correo_cliente': 'ana@example.com',
+                'fecha_retiro': '2026-12-01',
+                'cantidad': 2,
+            },
+            follow=True,
+        )
+
+        encargo = Encargo.objects.get()
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(response.wsgi_request.user.is_authenticated)
+        self.assertEqual(encargo.producto, self.producto)
+        self.assertEqual(encargo.nombre_cliente, 'Ana Pérez')
+        self.assertEqual(encargo.correo_cliente, 'ana@example.com')
+        self.assertEqual(str(encargo.fecha_retiro), '2026-12-01')
+        self.assertEqual(encargo.cantidad, 2)
+        self.assertContains(response, str(encargo.codigo))
+        self.assertContains(response, 'Tu encargo se registró correctamente')
+
+    def test_encargo_rechaza_cantidad_menor_a_uno(self):
+        response = self.client.post(
+            reverse('catalogo:detalle_producto', args=[self.producto.pk]),
+            {
+                'nombre_cliente': 'Ana Pérez',
+                'correo_cliente': 'ana@example.com',
+                'fecha_retiro': '2026-12-01',
+                'cantidad': 0,
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(Encargo.objects.exists())
