@@ -1,10 +1,9 @@
-from django.contrib import messages
 from django.db import transaction
 from django.db.models import F
 from django.shortcuts import get_object_or_404, redirect, render
 
 from .forms import EncargoForm
-from .models import Linea, Producto
+from .models import Encargo, Linea, Producto
 
 
 def inicio(request):
@@ -57,11 +56,10 @@ def detalle_producto(request, pk):
                     encargo.save()
 
             if stock_descontado:
-                messages.success(
-                    request,
-                    f'Tu encargo se registró correctamente. Código: {encargo.codigo}',
+                return redirect(
+                    'catalogo:comprobante_encargo',
+                    codigo=encargo.codigo,
                 )
-                return redirect('catalogo:detalle_producto', pk=producto.pk)
 
             producto = get_object_or_404(
                 Producto.objects.select_related('linea'),
@@ -79,4 +77,17 @@ def detalle_producto(request, pk):
         request,
         'catalogo/detalle_producto.html',
         {'producto': producto, 'formulario': formulario},
+    )
+
+
+def comprobante_encargo(request, codigo):
+    encargo = get_object_or_404(
+        Encargo.objects.select_related('producto'),
+        codigo=codigo,
+    )
+    total = encargo.producto.precio * encargo.cantidad
+    return render(
+        request,
+        'catalogo/comprobante_encargo.html',
+        {'encargo': encargo, 'total': total},
     )

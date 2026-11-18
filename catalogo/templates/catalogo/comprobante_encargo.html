@@ -1,0 +1,27 @@
+{% extends "catalogo/base.html" %}
+{% load catalogo_tags %}
+
+{% block title %}Comprobante de encargo | Pastelería{% endblock %}
+
+{% block content %}
+    <article class="detail-info">
+        <h1>Comprobante de encargo</h1>
+        <dl>
+            <dt>Código</dt>
+            <dd>{{ encargo.codigo }}</dd>
+            <dt>Producto</dt>
+            <dd>{{ encargo.producto.nombre }}</dd>
+            <dt>Nombre de quien encarga</dt>
+            <dd>{{ encargo.nombre_cliente }}</dd>
+            <dt>Cantidad</dt>
+            <dd>{{ encargo.cantidad }}</dd>
+            <dt>Fecha de retiro</dt>
+            <dd>{{ encargo.fecha_retiro|date:"d/m/Y" }}</dd>
+            <dt>Total</dt>
+            <dd class="price">{{ total|pesos_chilenos }}</dd>
+            <dt>Fecha y hora del encargo</dt>
+            <dd>{{ encargo.fecha_hora|date:"d/m/Y H:i" }}</dd>
+        </dl>
+        <p><a class="back-link" href="{% url 'catalogo:inicio' %}">Volver al catálogo</a></p>
+    </article>
+{% endblock %}

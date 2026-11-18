@@ -288,8 +288,21 @@ class CatalogoPublicoTests(TestCase):
         self.assertEqual(encargo.cantidad, 2)
         self.producto.refresh_from_db()
         self.assertEqual(self.producto.stock, 2)
+        self.assertContains(response, 'Comprobante de encargo')
         self.assertContains(response, str(encargo.codigo))
-        self.assertContains(response, 'Tu encargo se registró correctamente')
+        self.assertContains(response, 'Torta de chocolate')
+        self.assertContains(response, 'Ana Pérez')
+        self.assertContains(response, '<dd>2</dd>', html=True)
+        self.assertContains(
+            response,
+            encargo.fecha_retiro.strftime('%d/%m/%Y'),
+        )
+        self.assertContains(response, '$37.980')
+        self.assertContains(
+            response,
+            timezone.localtime(encargo.fecha_hora).strftime('%d/%m/%Y %H:%M'),
+        )
+        self.assertEqual(response.context['total'], 37980)
 
     def test_encargo_rechaza_datos_fuera_de_limites_o_invalidos(self):
         casos_invalidos = (
