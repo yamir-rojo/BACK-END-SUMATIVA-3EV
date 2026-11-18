@@ -304,6 +304,29 @@ class CatalogoPublicoTests(TestCase):
         )
         self.assertEqual(response.context['total'], 37980)
 
+    def test_recargar_comprobante_no_duplica_encargo_ni_descuenta_stock(self):
+        response = self.client.post(
+            reverse('catalogo:detalle_producto', args=[self.producto.pk]),
+            {
+                'nombre_cliente': 'Ana Pérez',
+                'correo_cliente': 'ana@example.com',
+                'fecha_retiro': timezone.localdate().isoformat(),
+                'cantidad': 2,
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        url_comprobante = response['Location']
+        self.assertEqual(Encargo.objects.count(), 1)
+
+        for _ in range(2):
+            response = self.client.get(url_comprobante)
+            self.assertEqual(response.status_code, 200)
+            self.assertContains(response, 'Comprobante de encargo')
+            self.assertEqual(Encargo.objects.count(), 1)
+            self.producto.refresh_from_db()
+            self.assertEqual(self.producto.stock, 2)
+
     def test_encargo_rechaza_datos_fuera_de_limites_o_invalidos(self):
         casos_invalidos = (
             ({'cantidad': 0}, 'cantidad'),
